@@ -10,12 +10,15 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { isModelAvailable } from "@/app/lib/modelAvailability";
+import {
+    isModelAvailable,
+    type ModelApiKeys,
+} from "@/app/lib/modelAvailability";
 
 export interface ModelOption {
     id: string;
     label: string;
-    group: "Anthropic" | "Google";
+    group: "Anthropic" | "Google" | "OpenRouter";
 }
 
 export const MODELS: ModelOption[] = [
@@ -23,21 +26,43 @@ export const MODELS: ModelOption[] = [
     { id: "claude-sonnet-4-6", label: "Claude Sonnet 4.6", group: "Anthropic" },
     { id: "gemini-3.1-pro-preview", label: "Gemini 3.1 Pro", group: "Google" },
     { id: "gemini-3-flash-preview", label: "Gemini 3 Flash", group: "Google" },
+    {
+        id: "openrouter-auto",
+        label: "Auto (OpenRouter Chooses)",
+        group: "OpenRouter",
+    },
+    {
+        id: "openrouter-claude-opus-4-7",
+        label: "Claude Opus 4.7",
+        group: "OpenRouter",
+    },
+    {
+        id: "openrouter-claude-sonnet-4-6",
+        label: "Claude Sonnet 4.6",
+        group: "OpenRouter",
+    },
+    {
+        id: "openrouter-gemini-3.1-pro-preview",
+        label: "Gemini 3.1 Pro",
+        group: "OpenRouter",
+    },
+    {
+        id: "openrouter-gemini-3-flash-preview",
+        label: "Gemini 3 Flash",
+        group: "OpenRouter",
+    },
 ];
 
 export const DEFAULT_MODEL_ID = "claude-sonnet-4-6";
 
 export const ALLOWED_MODEL_IDS = new Set(MODELS.map((m) => m.id));
 
-const GROUP_ORDER: ModelOption["group"][] = ["Anthropic", "Google"];
+const GROUP_ORDER: ModelOption["group"][] = ["Anthropic", "Google", "OpenRouter"];
 
 interface Props {
     value: string;
     onChange: (id: string) => void;
-    apiKeys?: {
-        claudeApiKey: string | null;
-        geminiApiKey: string | null;
-    };
+    apiKeys?: ModelApiKeys;
 }
 
 export function ModelToggle({ value, onChange, apiKeys }: Props) {

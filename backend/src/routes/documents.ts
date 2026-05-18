@@ -23,6 +23,7 @@ import {
 } from "../lib/documentVersions";
 import { ensureDocAccess } from "../lib/access";
 import { singleFileUpload } from "../lib/upload";
+import { maybeOcrPdf } from "../lib/pdfOcr";
 
 export const documentsRouter = Router();
 const ALLOWED_TYPES = new Set(["pdf", "docx", "doc"]);
@@ -425,12 +426,27 @@ documentsRouter.post(
       suffix === "pdf"
         ? "application/pdf"
         : "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+    let uploadBytes = file.buffer;
+    if (suffix === "pdf") {
+      try {
+        const ocrResult = await maybeOcrPdf(file.buffer);
+        uploadBytes = ocrResult.buffer;
+        if (ocrResult.ocrApplied) {
+          console.log(`[versions/upload] OCR applied for ${file.originalname}`);
+        }
+      } catch (err) {
+        console.warn(
+          `[versions/upload] OCR failed for ${file.originalname}; continuing with original PDF:`,
+          err,
+        );
+      }
+    }
     try {
       await uploadFile(
         key,
-        file.buffer.buffer.slice(
-          file.buffer.byteOffset,
-          file.buffer.byteOffset + file.buffer.byteLength,
+        uploadBytes.buffer.slice(
+          uploadBytes.byteOffset,
+          uploadBytes.byteOffset + uploadBytes.byteLength,
         ) as ArrayBuffer,
         contentType,
       );
@@ -872,22 +888,37 @@ async function handleDocumentUpload(
   try {
     const docId = doc.id as string;
     const key = storageKey(userId, docId, filename);
+    let uploadBytes = content;
+    if (suffix === "pdf") {
+      try {
+        const ocrResult = await maybeOcrPdf(content);
+        uploadBytes = ocrResult.buffer;
+        if (ocrResult.ocrApplied) {
+          console.log(`[upload] OCR applied for ${filename}`);
+        }
+      } catch (err) {
+        console.warn(
+          `[upload] OCR failed for ${filename}; continuing with original PDF:`,
+          err,
+        );
+      }
+    }
     const contentType =
       suffix === "pdf"
         ? "application/pdf"
         : "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
     await uploadFile(
       key,
-      content.buffer.slice(
-        content.byteOffset,
-        content.byteOffset + content.byteLength,
+      uploadBytes.buffer.slice(
+        uploadBytes.byteOffset,
+        uploadBytes.byteOffset + uploadBytes.byteLength,
       ) as ArrayBuffer,
       contentType,
     );
 
-    const rawBuf = content.buffer.slice(
-      content.byteOffset,
-      content.byteOffset + content.byteLength,
+    const rawBuf = uploadBytes.buffer.slice(
+      uploadBytes.byteOffset,
+      uploadBytes.byteOffset + uploadBytes.byteLength,
     ) as ArrayBuffer;
     const tree = await extractStructureTree(rawBuf, suffix, filename);
     const pageCount = suffix === "pdf" ? await countPdfPages(rawBuf) : null;
@@ -942,7 +973,7 @@ async function handleDocumentUpload(
       .from("documents")
       .update({
         current_version_id: versionRow.id,
-        size_bytes: content.byteLength,
+        size_bytes: uploadBytes.byteLength,
         page_count: pageCount,
         structure_tree: tree ?? null,
         status: "ready",

@@ -90,6 +90,8 @@ export function TRView({ reviewId, projectId }: Props) {
     const apiKeys = {
         claudeApiKey: profile?.claudeApiKey ?? null,
         geminiApiKey: profile?.geminiApiKey ?? null,
+        openrouterApiKey: profile?.openrouterApiKey ?? null,
+        hasOpenRouterApiKey: profile?.hasOpenRouterApiKey ?? false,
     };
     const tabularModel = profile?.tabularModel ?? "claude-sonnet-4-6";
 

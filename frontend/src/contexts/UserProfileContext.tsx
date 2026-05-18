@@ -21,6 +21,8 @@ interface UserProfile {
     tabularModel: string;
     claudeApiKey: string | null;
     geminiApiKey: string | null;
+    openrouterApiKey: string | null;
+    hasOpenRouterApiKey: boolean;
 }
 
 interface UserProfileContextType {
@@ -33,7 +35,7 @@ interface UserProfileContextType {
         value: string,
     ) => Promise<boolean>;
     updateApiKey: (
-        provider: "claude" | "gemini",
+        provider: "claude" | "gemini" | "openrouter",
         value: string | null,
     ) => Promise<boolean>;
     reloadProfile: () => Promise<void>;
@@ -77,6 +79,8 @@ export function UserProfileProvider({ children }: { children: ReactNode }) {
                     tabularModel: "claude-sonnet-4-6",
                     claudeApiKey: null,
                     geminiApiKey: null,
+                    openrouterApiKey: null,
+                    hasOpenRouterApiKey: false,
                 });
                 return;
             }
@@ -111,6 +115,11 @@ export function UserProfileProvider({ children }: { children: ReactNode }) {
                         data.tabular_model || "claude-sonnet-4-6",
                     claudeApiKey: data.claude_api_key ?? null,
                     geminiApiKey: data.gemini_api_key ?? null,
+                    openrouterApiKey: data.openrouter_api_key ?? null,
+                    hasOpenRouterApiKey: Boolean(
+                        data.openrouter_api_key_present ??
+                            data.openrouter_api_key,
+                    ),
                 });
 
                 // 2. Update database in background if needed
@@ -148,6 +157,8 @@ export function UserProfileProvider({ children }: { children: ReactNode }) {
                 tabularModel: "claude-sonnet-4-6",
                 claudeApiKey: null,
                 geminiApiKey: null,
+                openrouterApiKey: null,
+                hasOpenRouterApiKey: false,
             });
         } finally {
             setLoading(false);
@@ -245,27 +256,42 @@ export function UserProfileProvider({ children }: { children: ReactNode }) {
 
     const updateApiKey = useCallback(
         async (
-            provider: "claude" | "gemini",
+            provider: "claude" | "gemini" | "openrouter",
             value: string | null,
         ): Promise<boolean> => {
             if (!user) return false;
-            const dbField =
-                provider === "claude" ? "claude_api_key" : "gemini_api_key";
-            const stateField =
-                provider === "claude" ? "claudeApiKey" : "geminiApiKey";
+            const fieldMap = {
+                claude: ["claude_api_key", "claudeApiKey"],
+                gemini: ["gemini_api_key", "geminiApiKey"],
+                openrouter: ["openrouter_api_key", "openrouterApiKey"],
+            } as const;
+            const [dbField, stateField] = fieldMap[provider];
             const normalized = value?.trim() ? value.trim() : null;
             try {
-                const { error } = await supabase
+                const { data, error } = await supabase
                     .from("user_profiles")
                     .update({
                         [dbField]: normalized,
                         updated_at: new Date().toISOString(),
                     })
-                    .eq("user_id", user.id);
+                    .eq("user_id", user.id)
+                    .single();
                 if (error) throw error;
-                setProfile((prev) =>
-                    prev ? { ...prev, [stateField]: normalized } : null,
-                );
+                setProfile((prev) => {
+                    if (!prev) return null;
+                    return {
+                        ...prev,
+                        [stateField]: normalized,
+                        ...(provider === "openrouter"
+                            ? {
+                                  hasOpenRouterApiKey: Boolean(
+                                      data?.openrouter_api_key_present ??
+                                          normalized,
+                                  ),
+                              }
+                            : {}),
+                    };
+                });
                 return true;
             } catch {
                 return false;

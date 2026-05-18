@@ -35,6 +35,7 @@ import { useUserProfile } from "@/contexts/UserProfileContext";
 import {
     getModelProvider,
     isModelAvailable,
+    type ModelApiKeys,
     type ModelProvider,
 } from "@/app/lib/modelAvailability";
 
@@ -453,7 +454,7 @@ function TRChatInput({
     onCancel: () => void;
     model: string;
     onModelChange: (id: string) => void;
-    apiKeys: { claudeApiKey: string | null; geminiApiKey: string | null };
+    apiKeys: ModelApiKeys;
 }) {
     const [value, setValue] = useState("");
     const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -610,6 +611,8 @@ export function TRChatPanel({
     const apiKeys = {
         claudeApiKey: profile?.claudeApiKey ?? null,
         geminiApiKey: profile?.geminiApiKey ?? null,
+        openrouterApiKey: profile?.openrouterApiKey ?? null,
+        hasOpenRouterApiKey: profile?.hasOpenRouterApiKey ?? false,
     };
     const currentModel = profile?.tabularModel ?? "claude-sonnet-4-6";
     const [apiKeyModalProvider, setApiKeyModalProvider] =

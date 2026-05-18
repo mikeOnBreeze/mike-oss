@@ -12,8 +12,21 @@ const PROFILE_UPDATE_FIELDS = new Set([
   "tabular_model",
   "claude_api_key",
   "gemini_api_key",
+  "openrouter_api_key",
   "updated_at",
 ]);
+
+function withApiKeyStatus(profile: Record<string, unknown> | null) {
+  if (!profile) return profile;
+  return {
+    ...profile,
+    openrouter_api_key_present: !!(
+      process.env.OPENROUTER_API_KEY?.trim() ||
+      (typeof profile.openrouter_api_key === "string" &&
+        profile.openrouter_api_key.trim())
+    ),
+  };
+}
 
 // POST /user/profile
 userRouter.post("/profile", requireAuth, async (req, res) => {
@@ -45,7 +58,7 @@ userRouter.get("/profile", requireAuth, async (_req, res) => {
     .eq("user_id", userId)
     .single();
   if (error) return void res.status(500).json({ detail: error.message });
-  res.json(data);
+  res.json(withApiKeyStatus(data));
 });
 
 // PATCH /user/profile
@@ -71,7 +84,7 @@ userRouter.patch("/profile", requireAuth, async (req, res) => {
     .select("*")
     .single();
   if (error) return void res.status(500).json({ detail: error.message });
-  res.json(data);
+  res.json(withApiKeyStatus(data));
 });
 
 // DELETE /user/account

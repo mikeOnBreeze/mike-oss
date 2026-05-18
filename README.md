@@ -34,11 +34,15 @@ cp backend/.env.example backend/.env
 cp frontend/.env.local.example frontend/.env.local
 ```
 
-Add your Anthropic API key to `backend/.env`:
+Add your OpenRouter API key to `backend/.env`:
 
 ```bash
-ANTHROPIC_API_KEY=sk-ant-...
+OPENROUTER_API_KEY=sk-or-...
 ```
+
+You can also save an OpenRouter key from the app under
+`Account -> Models & API Keys`. Direct Anthropic and Gemini keys still work as
+provider-specific fallbacks.
 
 Start the backend:
 
@@ -64,8 +68,8 @@ No Supabase database, Supabase Auth project, or R2/S3 bucket is required.
 
 ## Required Services
 
-- Anthropic API key for Claude models
-- Optional Gemini API key only if you choose Gemini models
+- OpenRouter API key for all listed models, or direct provider keys if you
+  prefer Anthropic/Gemini-specific billing
 - LibreOffice for DOC/DOCX to PDF conversion
 
 ## Checks

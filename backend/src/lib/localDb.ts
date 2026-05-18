@@ -159,6 +159,7 @@ function defaultsFor(table: string, input: Row): Row {
         tabular_model: DEFAULT_TABULAR_MODEL,
         claude_api_key: null,
         gemini_api_key: null,
+        openrouter_api_key: null,
         created_at: now,
         updated_at: now,
       };

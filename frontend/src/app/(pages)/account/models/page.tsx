@@ -16,6 +16,7 @@ import { useUserProfile } from "@/contexts/UserProfileContext";
 import { MODELS } from "@/app/components/assistant/ModelToggle";
 import {
     isModelAvailable,
+    type ModelApiKeys,
     modelGroupToProvider,
 } from "@/app/lib/modelAvailability";
 
@@ -44,6 +45,10 @@ export default function ModelsAndApiKeysPage() {
                             apiKeys={{
                                 claudeApiKey: profile?.claudeApiKey ?? null,
                                 geminiApiKey: profile?.geminiApiKey ?? null,
+                                openrouterApiKey:
+                                    profile?.openrouterApiKey ?? null,
+                                hasOpenRouterApiKey:
+                                    profile?.hasOpenRouterApiKey ?? false,
                             }}
                             onChange={(id) =>
                                 updateModelPreference("tabularModel", id)
@@ -66,10 +71,18 @@ export default function ModelsAndApiKeysPage() {
                     own instance of Mike.
                 </p>
                 <p className="text-xs text-gray-400 mb-4 max-w-xl">
-                    Title generation uses Claude Haiku by default. Gemini is
-                    still available if you add a Google key.
+                    OpenRouter can run all listed models with one key. Direct
+                    Anthropic and Google keys are still supported.
                 </p>
                 <div className="space-y-4 max-w-xl">
+                    <ApiKeyField
+                        label="OpenRouter API Key"
+                        placeholder="sk-or-..."
+                        initialValue={profile?.openrouterApiKey ?? ""}
+                        onSave={(value) =>
+                            updateApiKey("openrouter", value.trim() || null)
+                        }
+                    />
                     <ApiKeyField
                         label="Anthropic (Claude) API Key"
                         placeholder="sk-ant-…"
@@ -99,12 +112,16 @@ function TabularModelDropdown({
 }: {
     value: string;
     onChange: (id: string) => void;
-    apiKeys: { claudeApiKey: string | null; geminiApiKey: string | null };
+    apiKeys: ModelApiKeys;
 }) {
     const [isOpen, setIsOpen] = useState(false);
     const selected = MODELS.find((m) => m.id === value);
     const selectedAvailable = isModelAvailable(value, apiKeys);
-    const groups: ("Anthropic" | "Google")[] = ["Anthropic", "Google"];
+    const groups: ("Anthropic" | "Google" | "OpenRouter")[] = [
+        "Anthropic",
+        "Google",
+        "OpenRouter",
+    ];
 
     return (
         <DropdownMenu onOpenChange={setIsOpen}>
@@ -153,7 +170,9 @@ function TabularModelDropdown({
                                         onSelect={() => onChange(m.id)}
                                         title={
                                             !available
-                                                ? `Add a ${provider === "claude" ? "Claude" : "Gemini"} API key to use this model`
+                                                ? provider === "openrouter"
+                                                    ? "Add an OpenRouter API key to use this model"
+                                                    : `Add an OpenRouter API key or a ${provider === "claude" ? "Claude" : "Gemini"} API key to use this model`
                                                 : undefined
                                         }
                                     >

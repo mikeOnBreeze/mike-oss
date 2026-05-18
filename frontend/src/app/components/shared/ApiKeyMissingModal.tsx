@@ -3,7 +3,11 @@
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, X } from "lucide-react";
-import { providerLabel, type ModelProvider } from "@/app/lib/modelAvailability";
+import {
+    providerKeyHelp,
+    providerLabel,
+    type ModelProvider,
+} from "@/app/lib/modelAvailability";
 
 interface Props {
     open: boolean;
@@ -18,9 +22,10 @@ export function ApiKeyMissingModal({ open, onClose, provider, message }: Props) 
     if (!open) return null;
 
     const providerName = provider ? providerLabel(provider) : "this provider";
+    const keyHelp = provider ? providerKeyHelp(provider) : "an API key";
     const body =
         message ??
-        `You haven't added a ${providerName} API key yet. Add one in your account settings to use this model.`;
+        `You haven't added ${keyHelp} yet. Add one in your account settings to use ${providerName} models.`;
 
     const handleGoToAccount = () => {
         onClose();
