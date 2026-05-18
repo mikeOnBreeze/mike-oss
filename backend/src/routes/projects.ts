@@ -9,6 +9,7 @@ import { downloadFile, uploadFile, storageKey } from "../lib/storage";
 import { docxToPdf, convertedPdfKey } from "../lib/convert";
 import { checkProjectAccess } from "../lib/access";
 import { singleFileUpload } from "../lib/upload";
+import { maybeOcrPdf } from "../lib/pdfOcr";
 
 export const projectsRouter = Router();
 const ALLOWED_TYPES = new Set(["pdf", "docx", "doc"]);
@@ -625,22 +626,37 @@ export async function handleDocumentUpload(
   try {
     const docId = doc.id as string;
     const key = storageKey(userId, docId, filename);
+    let uploadBytes = content;
+    if (suffix === "pdf") {
+      try {
+        const ocrResult = await maybeOcrPdf(content);
+        uploadBytes = ocrResult.buffer;
+        if (ocrResult.ocrApplied) {
+          console.log(`[upload] OCR applied for ${filename}`);
+        }
+      } catch (err) {
+        console.warn(
+          `[upload] OCR failed for ${filename}; continuing with original PDF:`,
+          err,
+        );
+      }
+    }
     const contentType =
       suffix === "pdf"
         ? "application/pdf"
         : "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
     await uploadFile(
       key,
-      content.buffer.slice(
-        content.byteOffset,
-        content.byteOffset + content.byteLength,
+      uploadBytes.buffer.slice(
+        uploadBytes.byteOffset,
+        uploadBytes.byteOffset + uploadBytes.byteLength,
       ) as ArrayBuffer,
       contentType,
     );
 
-    const rawBuf = content.buffer.slice(
-      content.byteOffset,
-      content.byteOffset + content.byteLength,
+    const rawBuf = uploadBytes.buffer.slice(
+      uploadBytes.byteOffset,
+      uploadBytes.byteOffset + uploadBytes.byteLength,
     ) as ArrayBuffer;
     const tree = await extractStructureTree(rawBuf, suffix, filename);
     const pageCount = suffix === "pdf" ? await countPdfPages(rawBuf) : null;
@@ -694,7 +710,7 @@ export async function handleDocumentUpload(
       .from("documents")
       .update({
         current_version_id: versionRow.id,
-        size_bytes: content.byteLength,
+        size_bytes: uploadBytes.byteLength,
         page_count: pageCount,
         structure_tree: tree ?? null,
         status: "ready",
