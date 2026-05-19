@@ -28,6 +28,15 @@ type NativeMessage = {
 const MAX_TOKENS = 16384;
 
 function client(override?: string | null): Anthropic {
+    const heyJudeEnabled = process.env.HEY_JUDE_ENABLED === "true";
+    if (heyJudeEnabled) {
+        const heyJudeBaseUrl = process.env.HEY_JUDE_BASE_URL || "http://localhost:4005";
+        const heyJudeApiKey = process.env.HEY_JUDE_API_KEY || "sk-heyjude-dev";
+        return new Anthropic({
+            apiKey: heyJudeApiKey,
+            baseURL: heyJudeBaseUrl.replace(/\/$/, ""),
+        });
+    }
     const apiKey = override?.trim() || process.env.ANTHROPIC_API_KEY || "";
     return new Anthropic({ apiKey });
 }

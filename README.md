@@ -34,10 +34,18 @@ cp backend/.env.example backend/.env
 cp frontend/.env.local.example frontend/.env.local
 ```
 
-Add your Anthropic API key to `backend/.env`:
+Add at least one LLM API key to `backend/.env`.
+
+For Claude models:
 
 ```bash
 ANTHROPIC_API_KEY=sk-ant-...
+```
+
+For Gemini models:
+
+```bash
+GEMINI_API_KEY=...
 ```
 
 Start the backend:
@@ -54,6 +62,32 @@ npm run dev --prefix frontend
 
 Open `http://localhost:3000`.
 
+## Optional: Route Mike Through Hey Jude
+
+Mike can send prompts through [Hey Jude](https://github.com/nickwatson/hey-jude) before they reach Claude or Gemini. Hey Jude runs locally, uses Ollama plus `qwen3.5:4b` by default to pseudonymize sensitive entities, and then forwards the sanitized prompt to the provider.
+
+Start Hey Jude first:
+
+```bash
+git clone https://github.com/nickwatson/hey-jude.git
+cd hey-jude
+ollama pull qwen3.5:4b
+cp .env.example .env
+docker compose up --build
+```
+
+Then enable it in `backend/.env`:
+
+```bash
+HEY_JUDE_ENABLED=true
+HEY_JUDE_BASE_URL=http://localhost:4005
+HEY_JUDE_API_KEY=sk-heyjude-dev
+```
+
+Start Mike normally after that. The browser still uses `http://localhost:3000`, and the backend still uses your configured Claude or Gemini model; Hey Jude sits between Mike and the model provider.
+
+Hey Jude reduces what leaves your machine for the LLM provider. Mike still stores your original chat text in the local JSON database listed below.
+
 ## Local Data
 
 - JSON database: `backend/data/local-db.json`
@@ -64,9 +98,9 @@ No Supabase database, Supabase Auth project, or R2/S3 bucket is required.
 
 ## Required Services
 
-- Anthropic API key for Claude models
-- Optional Gemini API key only if you choose Gemini models
+- Anthropic API key for Claude models, or a Gemini API key for Gemini models
 - LibreOffice for DOC/DOCX to PDF conversion
+- Optional Hey Jude gateway if you want local pseudonymization before provider calls
 
 ## Checks
 

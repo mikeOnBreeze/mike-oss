@@ -3,6 +3,7 @@ import {
     resolveModel,
     DEFAULT_TITLE_MODEL,
     DEFAULT_TABULAR_MODEL,
+    GEMINI_LOW_MODELS,
     type UserApiKeys,
 } from "./llm";
 
@@ -12,12 +13,15 @@ export type UserModelSettings = {
     api_keys: UserApiKeys;
 };
 
-// Title generation is a lightweight task — always routed to the cheapest model
-// of whichever provider the user has keys for: Gemini Flash Lite if Gemini is
-// available, otherwise Claude Haiku. With no user keys set, defaults to Gemini
-// (the dev-mode env fallback).
+const DEFAULT_GEMINI_TITLE_MODEL = GEMINI_LOW_MODELS[0];
+
+// Title generation is a lightweight task, so route it to the cheapest model
+// for whichever provider is actually available. Env keys count because local
+// dev commonly relies on backend/.env rather than saved per-user keys.
 function resolveTitleModel(apiKeys: UserApiKeys): string {
-    if (apiKeys.gemini?.trim()) return DEFAULT_TITLE_MODEL;
+    if (apiKeys.gemini?.trim() || process.env.GEMINI_API_KEY?.trim()) {
+        return DEFAULT_GEMINI_TITLE_MODEL;
+    }
     if (apiKeys.claude?.trim()) return "claude-haiku-4-5";
     return DEFAULT_TITLE_MODEL;
 }

@@ -29,6 +29,17 @@ type GeminiContent = {
 };
 
 function client(override?: string | null): GoogleGenAI {
+    const heyJudeEnabled = process.env.HEY_JUDE_ENABLED === "true";
+    if (heyJudeEnabled) {
+        const heyJudeBaseUrl = process.env.HEY_JUDE_BASE_URL || "http://localhost:4005";
+        const heyJudeApiKey = process.env.HEY_JUDE_API_KEY || "sk-heyjude-dev";
+        return new GoogleGenAI({
+            apiKey: heyJudeApiKey,
+            httpOptions: {
+                baseUrl: heyJudeBaseUrl.replace(/\/$/, ""),
+            },
+        });
+    }
     const apiKey = override?.trim() || process.env.GEMINI_API_KEY || "";
     return new GoogleGenAI({ apiKey });
 }
